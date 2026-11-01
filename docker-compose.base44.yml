@@ -1,0 +1,46 @@
+# Base44 sandbox compose for the "Windows 10 in Docker" project.
+#
+# The project's own docker-compose.yml targets a GitHub Codespace with nested
+# virtualization (4 cores / 16 GB / /dev/kvm). This sandbox has no /dev/kvm and
+# ~7 GB RAM, so the values below are adapted for it:
+#   - KVM=N        software emulation (about 10x slower); the sandbox exposes no /dev/kvm
+#   - RAM_SIZE=4G  the host has 7 GB total
+#   - DISK_SIZE=32G the sparse disk image has to fit in the ~41 GB free on the sandbox
+#   - ports 3000:8006 so the web console is the preview entry point
+services:
+  windows:
+    image: dockurr/windows
+    container_name: windows
+    environment:
+      VERSION: "10"
+      RAM_SIZE: "4G"
+      CPU_CORES: "4"
+      DISK_SIZE: "32G"
+      USERNAME: "admin"
+      PASSWORD: "MatKhau123"
+      KVM: "N"
+    devices:
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "3000:8006"
+      - "3389:3389/tcp"
+      - "3389:3389/udp"
+    volumes:
+      - windows-data:/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    restart: on-failure
+    stop_grace_period: 2m
+    labels:
+      base44.project: "Windows 10"
+      base44.kind: "web"
+      base44.port: "3000"
+
+volumes:
+  windows-data:
