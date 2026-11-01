@@ -14,11 +14,16 @@ services:
     environment:
       VERSION: "10"
       RAM_SIZE: "4G"
-      CPU_CORES: "4"
+      CPU_CORES: "max"
       DISK_SIZE: "32G"
       USERNAME: "admin"
       PASSWORD: "MatKhau123"
       KVM: "N"
+      # Intel HDA sound card for the guest; audio is streamed to the web console
+      AUDIO: "Y"
+      # Larger TCG translation cache: the only real speed-up available without
+      # /dev/kvm (software emulation defaults to a 32 MB cache).
+      ARGUMENTS: "-accel tcg,tb-size=256"
     devices:
       - /dev/net/tun
     cap_add:

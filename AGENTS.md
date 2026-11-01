@@ -17,6 +17,20 @@ The Base44 sandbox cannot run the upstream compose unchanged:
 | `RAM_SIZE=8G` | `4G` | Host has ~7 GB total. |
 | `DISK_SIZE=64G` | `32G` | ~41 GB free on `/`; the disk image is sparse but must fit. |
 | port `8006:8006` | `3000:8006` | Port 3000 is the preview entry point. |
+| `AUDIO` unset | `AUDIO=Y` | Adds an Intel HDA sound card and streams audio to the web console (the noVNC audio toggle stays disabled otherwise). |
+| — | `ARGUMENTS=-accel tcg,tb-size=256` | Bigger TCG translation cache — the only genuine speed-up without KVM (default is 32 MB). `CPU_CORES=max` takes every logical core. |
+
+`KVM=N` already makes dockur launch QEMU with `-accel tcg,thread=multi`, so
+multi-threaded emulation needs no extra flag. Check the live args with:
+
+```bash
+docker exec windows ps -ef | grep [q]emu
+```
+
+**Recreating the container restarts the Windows installation**: QEMU loses the
+installer session, and an incomplete `data.img` is recreated, so a restart during
+setup starts the file-copy phase again. Change CPU/audio/argument settings *before*
+a long install when possible.
 
 Storage lives in the named volume `windows-data` (not `./windows`) so the VM disk
 survives container recreation without polluting the repo.
