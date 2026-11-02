@@ -21,7 +21,8 @@ The Base44 sandbox cannot run the upstream compose unchanged:
 | `AUDIO` unset | `AUDIO=Y` | Adds an Intel HDA sound card and streams audio to the web console (the noVNC audio toggle stays disabled otherwise). |
 | — | `ARGUMENTS=-accel tcg,tb-size=384` | Bigger TCG translation cache (default is 32 MB) so guest code is translated once instead of repeatedly. |
 | — | `CPU_FLAGS=-avx,-avx2,-avx512f,-avx512vl` | AVX/AVX-512 are the slowest instruction groups to emulate in software and Windows 10 never needs them; this keeps the guest on SSE paths. `CPU_FLAGS` is appended by `/run/proc.sh`, unlike `CPU_FEATURES`, which the TCG path overwrites. |
-| — | `./novnc-defaults.json` mounted at `/usr/share/novnc/defaults.json` | Client tuning: auto-connect, auto-reconnect after a dropped socket, scaled view, and a cheap JPEG setting (`quality` 4, `compression` 1) so QEMU spends less CPU encoding frames. |
+| — | `LOSSY=Y` | QEMU sends JPEG ("lossy") VNC frames instead of lossless ones. A 1280×800 frame goes from megabytes to tens of kilobytes, which is what actually raises the console's frame rate through the preview proxy. |
+| — | `./novnc-defaults.json` mounted at `/usr/share/novnc/defaults.json` | Client tuning: auto-connect, fast auto-reconnect after a dropped socket, scaled view, and `compression` 0 / `quality` 4 so neither side spends CPU deflating frames twice. |
 
 `KVM=N` already makes dockur launch QEMU with `-accel tcg,thread=multi`, so
 multi-threaded emulation needs no extra flag. Check the live args with:

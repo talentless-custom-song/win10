@@ -1,10 +1,10 @@
 {
   "autoconnect": true,
   "reconnect": true,
-  "reconnect_delay": 800,
+  "reconnect_delay": 300,
   "shared": true,
   "resize": "scale",
-  "compression": 1,
+  "compression": 0,
   "quality": 4,
   "keep_device_awake": true,
   "warn_before_close": false

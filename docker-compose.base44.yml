@@ -22,6 +22,11 @@ services:
       KVM: "N"
       # Intel HDA sound card for the guest; audio is streamed to the web console
       AUDIO: "Y"
+      # Lossy VNC encoding (JPEG frames instead of lossless Tight/ZRLE). A frame
+      # drops from megabytes to tens of kilobytes, so far more frames reach the
+      # console per second through the preview proxy. This is the single biggest
+      # FPS lever left; the rest of the console is limited by TCG emulation.
+      LOSSY: "Y"
       # TCG tuning (no /dev/kvm here, so these are the available levers):
       #  - tb-size=384: bigger translation-block cache than the 32 MB default, so
       #    guest code is translated once instead of repeatedly.
