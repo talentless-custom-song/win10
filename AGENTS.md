@@ -17,6 +17,7 @@ The Base44 sandbox cannot run the upstream compose unchanged:
 | `RAM_SIZE=8G` | `4G` | Host has ~7 GB total. |
 | `DISK_SIZE=64G` | `32G` | ~41 GB free on `/`; the disk image is sparse but must fit. |
 | port `8006:8006` | `3000:8006` | Port 3000 is the preview entry point. |
+| — | `CPU_CORES=4` | Hard ceiling: the host has 4 cores and ~7 GB RAM in total, so 8 cores / 32 GB RAM are not available here. |
 | `AUDIO` unset | `AUDIO=Y` | Adds an Intel HDA sound card and streams audio to the web console (the noVNC audio toggle stays disabled otherwise). |
 | — | `ARGUMENTS=-accel tcg,tb-size=256` | Bigger TCG translation cache — the only genuine speed-up without KVM (default is 32 MB). `CPU_CORES=max` takes every logical core. |
 
@@ -34,6 +35,32 @@ a long install when possible.
 
 Storage lives in the named volume `windows-data` (not `./windows`) so the VM disk
 survives container recreation without polluting the repo.
+
+## Black screen in the preview console
+Two different causes, both handled here:
+
+1. **The container is not running.** When Windows shuts down (e.g. after installing
+   updates) QEMU exits with code 0, and the console on port 3000 disappears — the
+   preview then shows a black frame. The compose file therefore uses
+   `restart: unless-stopped`, which boots Windows again from the persisted
+   `windows-data` volume instead of leaving the console offline.
+2. **Windows is mid-boot or noVNC lost its socket** (phone locked, network blip).
+   Under TCG the guest shows a black screen for a long time between the boot logo
+   and the desktop; that is normal. If the page is stuck on "Connecting…", reload
+   the preview page. Check what the guest actually renders with a QEMU screendump
+   (no browser involved):
+
+```bash
+docker exec windows python3 -c '
+import socket, time
+s = socket.socket(socket.AF_UNIX); s.connect("/run/shm/monitor.sock"); s.settimeout(5)
+time.sleep(0.4); s.recv(4096)
+s.sendall(b"screendump /tmp/s.ppm\n"); time.sleep(1.5)'
+docker exec windows ls -l /tmp/s.ppm   # ~3 MB at 1280x800 == a real full frame
+```
+
+A screendump is the cheapest way to tell a guest-side black screen (brightness ~0)
+from a viewer-side disconnect (guest frame has content).
 
 ## Things to know
 - There is no source to bind-mount — the app IS the prebuilt image. Edits are made to

@@ -4,8 +4,9 @@
 # virtualization (4 cores / 16 GB / /dev/kvm). This sandbox has no /dev/kvm and
 # ~7 GB RAM, so the values below are adapted for it:
 #   - KVM=N        software emulation (about 10x slower); the sandbox exposes no /dev/kvm
-#   - RAM_SIZE=4G  the host has 7 GB total
-#   - DISK_SIZE=32G the sparse disk image has to fit in the ~41 GB free on the sandbox
+#   - RAM_SIZE=4G  hard ceiling: the host has 4 cores / ~7 GB RAM in total
+#   - CPU_CORES=4  every core the host has
+#   - DISK_SIZE=32G the sparse disk image has to fit in the ~29 GB free on the sandbox
 #   - ports 3000:8006 so the web console is the preview entry point
 services:
   windows:
@@ -14,7 +15,7 @@ services:
     environment:
       VERSION: "10"
       RAM_SIZE: "4G"
-      CPU_CORES: "max"
+      CPU_CORES: "4"
       DISK_SIZE: "32G"
       USERNAME: "admin"
       PASSWORD: "MatKhau123"
@@ -40,7 +41,10 @@ services:
       timeout: 10s
       retries: 5
       start_period: 120s
-    restart: on-failure
+    # Windows shutting down exits the container with code 0, which took the
+    # console (port 3000) offline and left the preview on a black screen.
+    # `unless-stopped` brings QEMU back up from the persisted disk instead.
+    restart: unless-stopped
     stop_grace_period: 2m
     labels:
       base44.project: "Windows 10"
