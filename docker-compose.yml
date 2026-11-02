@@ -1,0 +1,27 @@
+services:
+  windows:
+    image: dockurr/windows
+    container_name: windows
+    environment:
+      # ISO Windows 10 Lite 19H2 x64 (khoang 1.1 GB), image tu tai ve
+      VERSION: "https://archive.org/download/windows-10-lite-edition-19h2-x64/Windows%2010%20Lite%20Edition%2019H2%20x64.iso"
+      RAM_SIZE: "8G"
+      CPU_CORES: "4"
+      DISK_SIZE: "30G"
+      USERNAME: "admin"
+      PASSWORD: "Linh123"
+      # Card am thanh ao, bat bang: bash install.sh sound
+      ARGUMENTS: "${WIN_ARGS:-}"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8006:8006
+      - 3389:3389/tcp
+      - 3389:3389/udp
+    volumes:
+      - ./windows:/storage
+    restart: always
+    stop_grace_period: 2m
