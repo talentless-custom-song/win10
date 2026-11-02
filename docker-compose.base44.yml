@@ -22,9 +22,14 @@ services:
       KVM: "N"
       # Intel HDA sound card for the guest; audio is streamed to the web console
       AUDIO: "Y"
-      # Larger TCG translation cache: the only real speed-up available without
-      # /dev/kvm (software emulation defaults to a 32 MB cache).
-      ARGUMENTS: "-accel tcg,tb-size=256"
+      # TCG tuning (no /dev/kvm here, so these are the available levers):
+      #  - tb-size=384: bigger translation-block cache than the 32 MB default, so
+      #    guest code is translated once instead of repeatedly.
+      #  - CPU_FLAGS: AVX/AVX-512 are the slowest instruction groups to emulate in
+      #    software and Windows never requires them; hiding them keeps the guest
+      #    on SSE2/SSE4 paths.
+      ARGUMENTS: "-accel tcg,tb-size=384"
+      CPU_FLAGS: "-avx,-avx2,-avx512f,-avx512vl"
     devices:
       - /dev/net/tun
     cap_add:
@@ -35,6 +40,9 @@ services:
       - "3389:3389/udp"
     volumes:
       - windows-data:/storage
+      # Client-side console tuning: auto-connect + auto-reconnect, scaled view and
+      # a cheap JPEG setting so a CPU-starved QEMU spends less time encoding frames.
+      - ./novnc-defaults.json:/usr/share/novnc/defaults.json:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8006/ || exit 1"]
       interval: 30s

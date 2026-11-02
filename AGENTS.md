@@ -19,7 +19,9 @@ The Base44 sandbox cannot run the upstream compose unchanged:
 | port `8006:8006` | `3000:8006` | Port 3000 is the preview entry point. |
 | — | `CPU_CORES=4` | Hard ceiling: the host has 4 cores and ~7 GB RAM in total, so 8 cores / 32 GB RAM are not available here. |
 | `AUDIO` unset | `AUDIO=Y` | Adds an Intel HDA sound card and streams audio to the web console (the noVNC audio toggle stays disabled otherwise). |
-| — | `ARGUMENTS=-accel tcg,tb-size=256` | Bigger TCG translation cache — the only genuine speed-up without KVM (default is 32 MB). `CPU_CORES=max` takes every logical core. |
+| — | `ARGUMENTS=-accel tcg,tb-size=384` | Bigger TCG translation cache (default is 32 MB) so guest code is translated once instead of repeatedly. |
+| — | `CPU_FLAGS=-avx,-avx2,-avx512f,-avx512vl` | AVX/AVX-512 are the slowest instruction groups to emulate in software and Windows 10 never needs them; this keeps the guest on SSE paths. `CPU_FLAGS` is appended by `/run/proc.sh`, unlike `CPU_FEATURES`, which the TCG path overwrites. |
+| — | `./novnc-defaults.json` mounted at `/usr/share/novnc/defaults.json` | Client tuning: auto-connect, auto-reconnect after a dropped socket, scaled view, and a cheap JPEG setting (`quality` 4, `compression` 1) so QEMU spends less CPU encoding frames. |
 
 `KVM=N` already makes dockur launch QEMU with `-accel tcg,thread=multi`, so
 multi-threaded emulation needs no extra flag. Check the live args with:
@@ -31,7 +33,9 @@ docker exec windows ps -ef | grep [q]emu
 **Recreating the container restarts the Windows installation**: QEMU loses the
 installer session, and an incomplete `data.img` is recreated, so a restart during
 setup starts the file-copy phase again. Change CPU/audio/argument settings *before*
-a long install when possible.
+a long install when possible. Once Windows is installed, recreation is safe: the
+guest simply reboots from `data.img` (~2–3 minutes to the desktop under TCG,
+measured after the tuning above; a cold first boot takes much longer).
 
 Storage lives in the named volume `windows-data` (not `./windows`) so the VM disk
 survives container recreation without polluting the repo.
