@@ -13,7 +13,10 @@ services:
     image: dockurr/windows
     container_name: windows
     environment:
-      VERSION: "10"
+      # "Windows 10 Lite Edition 2019H2 x64": a 1.1 GB community-slimmed ISO on
+      # archive.org. dockur accepts a plain ISO URL as VERSION, downloads it into
+      # the volume and installs from it instead of the 6 GB Microsoft image.
+      VERSION: "https://archive.org/download/windows-10-lite-edition-19h2-x64/Windows%2010%20Lite%20Edition%2019H2%20x64.iso"
       RAM_SIZE: "4G"
       CPU_CORES: "4"
       DISK_SIZE: "32G"

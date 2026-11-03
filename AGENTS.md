@@ -18,6 +18,7 @@ The Base44 sandbox cannot run the upstream compose unchanged:
 | `DISK_SIZE=64G` | `32G` | ~41 GB free on `/`; the disk image is sparse but must fit. |
 | port `8006:8006` | `3000:8006` | Port 3000 is the preview entry point. |
 | — | `CPU_CORES=4` | Hard ceiling: the host has 4 cores and ~7 GB RAM in total, so 8 cores / 32 GB RAM are not available here. |
+| `VERSION=11` | `VERSION=<ISO URL>` | Uses "Windows 10 Lite Edition 2019H2 x64" from archive.org (1.2 GB, slimmed community ISO) instead of the ~6 GB Microsoft image. dockur accepts an ISO URL as `VERSION`, downloads it into the volume and installs from it. The archive.org path is case-sensitive: `...Edition%2019H2%20x64.iso` (uppercase `H`) downloads, the lowercase `19h2` variant 404s. |
 | `AUDIO` unset | `AUDIO=Y` | Adds an Intel HDA sound card and streams audio to the web console (the noVNC audio toggle stays disabled otherwise). |
 | — | `ARGUMENTS=-accel tcg,tb-size=384` | Bigger TCG translation cache (default is 32 MB) so guest code is translated once instead of repeatedly. |
 | — | `CPU_FLAGS=-avx,-avx2,-avx512f,-avx512vl` | AVX/AVX-512 are the slowest instruction groups to emulate in software and Windows 10 never needs them; this keeps the guest on SSE paths. `CPU_FLAGS` is appended by `/run/proc.sh`, unlike `CPU_FEATURES`, which the TCG path overwrites. |
@@ -70,13 +71,16 @@ from a viewer-side disconnect (guest frame has content).
 ## Things to know
 - There is no source to bind-mount — the app IS the prebuilt image. Edits are made to
   the compose file / container env only.
-- First boot downloads the Windows 10 ISO (~6 GB) from Microsoft with `aria2c`, then
-  boots the installer. Under TCG software emulation a full Windows 10 installation
-  takes **many hours**, so a freshly booted stack shows "Downloading…" then
-  "Starting…" / the installer for a long time. This is expected, not a hang.
-- Microsoft serves the ISO to datacenter IPs intermittently; dockur logs
-  "Microsoft blocked the automated download request" and retries through a different
-  method — a successful download still follows.
+- First boot downloads the ISO named in `VERSION` (currently the 1.2 GB Windows 10
+  Lite image from archive.org, a few minutes) and boots the installer. Under TCG the
+  installation itself is still slow but far shorter than a full Windows 10 install.
+- **Reinstalling / reclaiming space:** wipe the volume, then start again — dockur
+  rebuilds `data.img` and re-runs setup from the ISO:
+  ```bash
+  docker compose -f docker-compose.base44.yml down
+  docker run --rm --entrypoint sh -v app_windows-data:/storage dockurr/windows -c 'rm -rf /storage/*'
+  docker compose -f docker-compose.base44.yml up -d
+  ```
 - Ports 3389/tcp+udp are published for RDP once Windows is installed
   (user `admin`, password from `PASSWORD` in the compose file).
 
